@@ -46,8 +46,8 @@ module "cicd" {
   }
 
   tags = {
-    Project     = "my-app"
-    Environment = "production"
+    project     = "my-app"
+    environment = "production"
   }
 }
 ```
@@ -146,9 +146,9 @@ module "cicd" {
   ]
 
   tags = {
-    Project     = "wordpress"
-    Environment = "production"
-    Component   = "cicd"
+    project     = "wordpress"
+    environment = "production"
+    component   = "cicd"
   }
 }
 ```
@@ -182,7 +182,7 @@ module "cicd" {
   sns_topic_arn = "arn:aws:sns:us-east-1:123456789012:existing-topic"
 
   tags = {
-    Project = "my-app"
+    project = "my-app"
   }
 }
 ```

@@ -43,8 +43,8 @@ resource "aws_codebuild_project" "main" {
   }
 
   tags = merge(var.tags, {
-    Name      = var.codebuild_project_name
-    Component = "cicd"
+    name      = var.codebuild_project_name
+    component = "cicd"
   })
 }
 
@@ -53,8 +53,8 @@ resource "aws_s3_bucket" "codepipeline_artifacts" {
   bucket = var.artifacts_bucket_name
 
   tags = merge(var.tags, {
-    Name      = var.artifacts_bucket_name
-    Component = "cicd"
+    name      = var.artifacts_bucket_name
+    component = "cicd"
   })
 }
 
@@ -194,8 +194,8 @@ resource "aws_codepipeline" "main" {
   }
 
   tags = merge(var.tags, {
-    Name      = var.codepipeline_name
-    Component = "cicd"
+    name      = var.codepipeline_name
+    component = "cicd"
   })
 }
 
@@ -217,8 +217,8 @@ resource "aws_codepipeline_webhook" "github" {
   }
 
   tags = merge(var.tags, {
-    Name      = "${var.codepipeline_name}-webhook"
-    Component = "cicd"
+    name      = "${var.codepipeline_name}-webhook"
+    component = "cicd"
   })
 }
 
@@ -229,8 +229,8 @@ resource "aws_codedeploy_app" "main" {
   name             = var.codedeploy_app_name
 
   tags = merge(var.tags, {
-    Name      = var.codedeploy_app_name
-    Component = "cicd"
+    name      = var.codedeploy_app_name
+    component = "cicd"
   })
 }
 
@@ -300,8 +300,8 @@ resource "aws_codedeploy_deployment_group" "main" {
   }
 
   tags = merge(var.tags, {
-    Name      = var.codedeploy_deployment_group_name
-    Component = "cicd"
+    name      = var.codedeploy_deployment_group_name
+    component = "cicd"
   })
 }
 
@@ -312,8 +312,8 @@ resource "aws_cloudwatch_log_group" "codebuild" {
   kms_key_id        = var.logs_kms_key_id != "" ? var.logs_kms_key_id : null
 
   tags = merge(var.tags, {
-    Name      = "${var.codebuild_project_name}-logs"
-    Component = "cicd"
+    name      = "${var.codebuild_project_name}-logs"
+    component = "cicd"
   })
 }
 
@@ -324,8 +324,8 @@ resource "aws_cloudwatch_log_group" "codedeploy" {
   kms_key_id        = var.logs_kms_key_id != "" ? var.logs_kms_key_id : null
 
   tags = merge(var.tags, {
-    Name      = "${var.codedeploy_app_name}-logs"
-    Component = "cicd"
+    name      = "${var.codedeploy_app_name}-logs"
+    component = "cicd"
   })
 }
 
@@ -335,8 +335,8 @@ resource "aws_sns_topic" "pipeline_notifications" {
   name  = var.sns_topic_name
 
   tags = merge(var.tags, {
-    Name      = var.sns_topic_name
-    Component = "cicd"
+    name      = var.sns_topic_name
+    component = "cicd"
   })
 }
 
@@ -355,8 +355,8 @@ resource "aws_cloudwatch_event_rule" "pipeline_state_change" {
   })
 
   tags = merge(var.tags, {
-    Name      = "${var.codepipeline_name}-state-change"
-    Component = "cicd"
+    name      = "${var.codepipeline_name}-state-change"
+    component = "cicd"
   })
 }
 
@@ -375,8 +375,8 @@ resource "aws_cloudwatch_event_rule" "stage_state_change" {
   })
 
   tags = merge(var.tags, {
-    Name      = "${var.codepipeline_name}-stage-state-change"
-    Component = "cicd"
+    name      = "${var.codepipeline_name}-stage-state-change"
+    component = "cicd"
   })
 }
 

@@ -18,8 +18,8 @@ resource "aws_iam_role" "codepipeline_role" {
   })
 
   tags = merge(var.tags, {
-    Name      = "${var.codepipeline_name}-pipeline-role"
-    Component = "cicd"
+    name      = "${var.codepipeline_name}-pipeline-role"
+    component = "cicd"
   })
 }
 
@@ -86,8 +86,8 @@ resource "aws_iam_role" "codebuild_role" {
   })
 
   tags = merge(var.tags, {
-    Name      = "${var.codebuild_project_name}-build-role"
-    Component = "cicd"
+    name      = "${var.codebuild_project_name}-build-role"
+    component = "cicd"
   })
 }
 
@@ -191,8 +191,8 @@ resource "aws_iam_role" "codedeploy_role" {
   })
 
   tags = merge(var.tags, {
-    Name      = "${var.codedeploy_app_name}-deploy-role"
-    Component = "cicd"
+    name      = "${var.codedeploy_app_name}-deploy-role"
+    component = "cicd"
   })
 }
 
