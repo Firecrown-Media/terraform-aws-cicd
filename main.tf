@@ -185,7 +185,11 @@ resource "aws_codepipeline" "main" {
       input_artifacts = ["build_output"]
       version         = "1"
 
-      configuration = var.deploy_config.configuration
+      # Simplified configuration to avoid character limits
+      configuration = {
+        ApplicationName     = lookup(var.deploy_config.configuration, "ApplicationName", "")
+        DeploymentGroupName = lookup(var.deploy_config.configuration, "DeploymentGroupName", "")
+      }
     }
   }
 
