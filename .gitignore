@@ -1,0 +1,16 @@
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfplan
+*.tfstate
+*.tfstate.backup
+*.tfvars
+*.tfvars.json
+
+# OS
+.DS_Store
+.vscode/
+.idea/
+
+# Logs
+*.log

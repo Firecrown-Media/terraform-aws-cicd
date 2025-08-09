@@ -97,7 +97,7 @@ resource "aws_iam_role_policy" "codebuild_policy" {
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = concat([
+    Statement = [
       {
         Effect = "Allow"
         Action = [
@@ -123,7 +123,19 @@ resource "aws_iam_role_policy" "codebuild_policy" {
           "${aws_s3_bucket.codepipeline_artifacts.arn}/*"
         ]
       }
-    ], var.vpc_config != null ? [
+    ]
+  })
+}
+
+# VPC-specific policies for CodeBuild (when VPC is configured)
+resource "aws_iam_role_policy" "codebuild_vpc_policy" {
+  count       = var.vpc_config != null ? 1 : 0
+  name_prefix = "${substr(var.codebuild_project_name, 0, 32)}-vpc-"
+  role        = aws_iam_role.codebuild_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
       {
         Effect = "Allow"
         Action = [
@@ -149,7 +161,7 @@ resource "aws_iam_role_policy" "codebuild_policy" {
           }
         }
       }
-    ] : [])
+    ]
   })
 }
 
