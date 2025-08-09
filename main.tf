@@ -134,6 +134,24 @@ resource "aws_codepipeline" "main" {
         }
       }
     }
+
+    dynamic "action" {
+      for_each = var.source_config.type == "GitHubV2" ? [1] : []
+      content {
+        name             = "Source"
+        category         = "Source"
+        owner            = "AWS"
+        provider         = "CodeStarSourceConnection"
+        version          = "1"
+        output_artifacts = ["source_output"]
+
+        configuration = {
+          ConnectionArn    = var.source_config.github_connection_arn
+          FullRepositoryId = "${var.source_config.github_owner}/${var.source_config.github_repo}"
+          BranchName       = var.source_config.github_branch
+        }
+      }
+    }
   }
 
   # Build Stage
@@ -177,7 +195,7 @@ resource "aws_codepipeline" "main" {
   })
 }
 
-# Optional GitHub webhook
+# Optional GitHub webhook (only for GitHub v1)
 resource "aws_codepipeline_webhook" "github" {
   count           = var.source_config.type == "GitHub" && var.github_webhook_secret != "" ? 1 : 0
   name            = "${var.codepipeline_name}-webhook"

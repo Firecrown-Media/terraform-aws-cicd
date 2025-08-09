@@ -79,18 +79,19 @@ variable "vpc_config" {
 variable "source_config" {
   description = "Source configuration for the pipeline"
   type = object({
-    type               = string # "S3" or "GitHub"
-    s3_bucket         = optional(string)
-    s3_key            = optional(string)
-    github_owner      = optional(string)
-    github_repo       = optional(string)
-    github_branch     = optional(string, "main")
-    github_oauth_token = optional(string)
+    type                     = string # "S3", "GitHub", or "GitHubV2"
+    s3_bucket               = optional(string)
+    s3_key                  = optional(string)
+    github_owner            = optional(string)
+    github_repo             = optional(string)
+    github_branch           = optional(string, "main")
+    github_oauth_token      = optional(string) # For GitHub v1 (deprecated)
+    github_connection_arn   = optional(string) # For GitHub v2 (recommended)
   })
   
   validation {
-    condition = contains(["S3", "GitHub"], var.source_config.type)
-    error_message = "Source type must be either 'S3' or 'GitHub'."
+    condition = contains(["S3", "GitHub", "GitHubV2"], var.source_config.type)
+    error_message = "Source type must be either 'S3', 'GitHub', or 'GitHubV2'."
   }
 }
 
