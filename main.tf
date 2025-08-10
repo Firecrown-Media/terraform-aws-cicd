@@ -185,10 +185,16 @@ resource "aws_codepipeline" "main" {
       input_artifacts = ["build_output"]
       version         = "1"
 
-      # Simplified configuration to avoid character limits
+      # Full configuration for ECS Blue/Green deployments
       configuration = {
-        ApplicationName     = lookup(var.deploy_config.configuration, "ApplicationName", "")
-        DeploymentGroupName = lookup(var.deploy_config.configuration, "DeploymentGroupName", "")
+        ApplicationName                = lookup(var.deploy_config.configuration, "ApplicationName", "")
+        DeploymentGroupName           = lookup(var.deploy_config.configuration, "DeploymentGroupName", "")
+        TaskDefinitionTemplateArtifact = "build_output"
+        TaskDefinitionTemplatePath    = "taskdef.json"
+        AppSpecTemplateArtifact       = "build_output" 
+        AppSpecTemplatePath           = "appspec.yaml"
+        Image1ArtifactName            = "build_output"
+        Image1ContainerName           = "IMAGE1_NAME"
       }
     }
   }
