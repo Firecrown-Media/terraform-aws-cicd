@@ -171,12 +171,7 @@ resource "aws_iam_role_policy" "codebuild_vpc_policy" {
         Action = [
           "ec2:CreateNetworkInterfacePermission"
         ]
-        Resource = "arn:aws:ec2:*:*:network-interface/*"
-        Condition = {
-          StringEquals = {
-            "ec2:Subnet" = [for subnet in var.vpc_config.subnets : "arn:aws:ec2:*:*:subnet/${subnet}"]
-          }
-        }
+        Resource = "*"
       },
       {
         Effect = "Allow"
@@ -201,12 +196,13 @@ resource "aws_iam_role_policy_attachment" "codebuild_additional_policies" {
   policy_arn = each.value
 }
 
-# AWS Managed VPC policy for CodeBuild (when VPC is configured)
-resource "aws_iam_role_policy_attachment" "codebuild_vpc_managed_policy" {
-  count      = var.vpc_config != null ? 1 : 0
-  role       = aws_iam_role.codebuild_role.name
-  policy_arn = "arn:aws:iam::aws:policy/EC2InstanceProfileForImageBuilder"
-}
+# Alternative: Remove VPC managed policy for troubleshooting
+# The issue might be policy conflicts or wrong managed policy
+# resource "aws_iam_role_policy_attachment" "codebuild_vpc_managed_policy" {
+#   count      = var.vpc_config != null ? 1 : 0
+#   role       = aws_iam_role.codebuild_role.name
+#   policy_arn = "arn:aws:iam::aws:policy/EC2InstanceProfileForImageBuilder"
+# }
 
 # CodeDeploy Service Role (optional)
 resource "aws_iam_role" "codedeploy_role" {
