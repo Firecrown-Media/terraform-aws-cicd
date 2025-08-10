@@ -156,7 +156,13 @@ resource "aws_iam_role_policy" "codebuild_vpc_policy" {
           "ec2:DescribeVpcs",
           "ec2:AttachNetworkInterface",
           "ec2:DetachNetworkInterface",
-          "ec2:ModifyNetworkInterfaceAttribute"
+          "ec2:ModifyNetworkInterfaceAttribute",
+          "ec2:DescribeRouteTables",
+          "ec2:DescribeNetworkAcls",
+          "ec2:DescribeVpcAttribute",
+          "ec2:DescribeInternetGateways",
+          "ec2:DescribeVpcEndpoints",
+          "ec2:DescribeAvailabilityZones"
         ]
         Resource = "*"
       },
@@ -171,6 +177,18 @@ resource "aws_iam_role_policy" "codebuild_vpc_policy" {
             "ec2:Subnet" = [for subnet in var.vpc_config.subnets : "arn:aws:ec2:*:*:subnet/${subnet}"]
           }
         }
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:CreateTags",
+          "ec2:DescribeTags"
+        ]
+        Resource = [
+          "arn:aws:ec2:*:*:network-interface/*",
+          "arn:aws:ec2:*:*:subnet/*",
+          "arn:aws:ec2:*:*:security-group/*"
+        ]
       }
     ]
   })
