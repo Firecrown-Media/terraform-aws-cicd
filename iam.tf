@@ -64,6 +64,14 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
         ]
         Resource = "*"
       }
+    ] : [], var.source_config.type == "GitHubV2" && var.source_config.github_connection_arn != null ? [
+      {
+        Effect = "Allow"
+        Action = [
+          "codestar-connections:UseConnection"
+        ]
+        Resource = var.source_config.github_connection_arn
+      }
     ] : [])
   })
 }
