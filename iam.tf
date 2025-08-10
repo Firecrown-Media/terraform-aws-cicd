@@ -201,6 +201,13 @@ resource "aws_iam_role_policy_attachment" "codebuild_additional_policies" {
   policy_arn = each.value
 }
 
+# AWS Managed VPC policy for CodeBuild (when VPC is configured)
+resource "aws_iam_role_policy_attachment" "codebuild_vpc_managed_policy" {
+  count      = var.vpc_config != null ? 1 : 0
+  role       = aws_iam_role.codebuild_role.name
+  policy_arn = "arn:aws:iam::aws:policy/EC2InstanceProfileForImageBuilder"
+}
+
 # CodeDeploy Service Role (optional)
 resource "aws_iam_role" "codedeploy_role" {
   count       = var.create_codedeploy_app ? 1 : 0
