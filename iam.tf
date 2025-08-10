@@ -153,7 +153,10 @@ resource "aws_iam_role_policy" "codebuild_vpc_policy" {
           "ec2:DeleteNetworkInterface",
           "ec2:DescribeSubnets",
           "ec2:DescribeSecurityGroups",
-          "ec2:DescribeVpcs"
+          "ec2:DescribeVpcs",
+          "ec2:AttachNetworkInterface",
+          "ec2:DetachNetworkInterface",
+          "ec2:ModifyNetworkInterfaceAttribute"
         ]
         Resource = "*"
       },
