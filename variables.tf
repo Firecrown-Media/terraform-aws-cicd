@@ -180,6 +180,12 @@ variable "codedeploy_termination_wait_time" {
   }
 }
 
+variable "codedeploy_container_name" {
+  description = "Name of the container to update during CodeDeploy ECS deployment"
+  type        = string
+  default     = "app"
+}
+
 variable "codedeploy_auto_rollback_enabled" {
   description = "Enable auto rollback for CodeDeploy"
   type        = bool

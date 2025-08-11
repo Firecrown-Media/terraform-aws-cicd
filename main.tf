@@ -194,7 +194,7 @@ resource "aws_codepipeline" "main" {
         AppSpecTemplateArtifact       = "build_output" 
         AppSpecTemplatePath           = "appspec.yaml"
         Image1ArtifactName            = "build_output"
-        Image1ContainerName           = "IMAGE1_NAME"
+        Image1ContainerName           = var.codedeploy_container_name
       }
     }
   }
