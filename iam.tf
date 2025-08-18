@@ -86,6 +86,14 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
         ]
         Resource = var.source_config.github_connection_arn
       }
+    ] : [], length(var.codedeploy_task_role_arns) > 0 ? [
+      {
+        Effect = "Allow"
+        Action = [
+          "iam:PassRole"
+        ]
+        Resource = var.codedeploy_task_role_arns
+      }
     ] : [])
   })
 }
