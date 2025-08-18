@@ -1,47 +1,48 @@
 # Terraform AWS CI/CD Module
 
-A reusable Terraform module for creating AWS CI/CD pipelines with CodePipeline, CodeBuild, and CodeDeploy.
+A reusable Terraform module for creating AWS CI/CD pipelines with CodePipeline, CodeBuild, and flexible deployment options.
 
 ## Features
 
 - **CodePipeline**: Orchestrates the CI/CD workflow
 - **CodeBuild**: Builds and packages applications
-- **CodeDeploy**: Deploys applications (optional)
+- **Flexible Deployment**: Support for both CodeDeploy blue/green and standard ECS rolling deployments
 - **S3 Artifacts Storage**: Secure storage for build artifacts
 - **SNS Notifications**: Optional notifications for pipeline events
 - **VPC Support**: Optional VPC configuration for CodeBuild
-- **Blue/Green Deployments**: Support for ECS blue/green deployments
-- **Flexible Source**: Support for both GitHub and S3 sources
+- **Multiple Source Types**: Support for GitHub (v1/v2) and S3 sources
 
 ## Usage
 
-### Basic Usage
+### Standard ECS Rolling Deployment
 
 ```hcl
 module "cicd" {
   source = "github.com/Firecrown-Media/terraform-aws-cicd"
 
-  codepipeline_name       = "my-app-pipeline"
-  codebuild_project_name  = "my-app-build"
-  artifacts_bucket_name   = "my-app-pipeline-artifacts"
+  # Basic configuration
+  codepipeline_name      = "my-app-pipeline"
+  codebuild_project_name = "my-app-build"
+  artifacts_bucket_name  = "my-app-pipeline-artifacts"
 
+  # Use standard ECS rolling deployment
+  deployment_type = "ecs"
+
+  # Source configuration (GitHub v2 recommended)
   source_config = {
-    type          = "GitHub"
-    github_owner  = "my-org"
-    github_repo   = "my-app"
-    github_branch = "main"
-    github_oauth_token = var.github_oauth_token
+    type                  = "GitHubV2"
+    github_owner          = "my-org"
+    github_repo           = "my-app"
+    github_branch         = "main"
+    github_connection_arn = "arn:aws:codestar-connections:us-east-1:123456789012:connection/xyz"
   }
 
+  # Deploy configuration for ECS rolling deployment
   deploy_config = {
-    provider = "CodeDeployToECS"
+    provider = "ECS"
     configuration = {
-      ApplicationName     = "my-app"
-      DeploymentGroupName = "my-app-dg"
-      TaskDefinitionTemplateArtifact = "build_output"
-      TaskDefinitionTemplatePath     = "taskdef.json"
-      AppSpecTemplateArtifact        = "build_output"
-      AppSpecTemplatePath           = "appspec.yaml"
+      ClusterName = "my-ecs-cluster"
+      ServiceName = "my-ecs-service"
     }
   }
 
@@ -52,50 +53,35 @@ module "cicd" {
 }
 ```
 
-### With CodeDeploy Blue/Green ECS Deployment
+### CodeDeploy Blue/Green ECS Deployment
 
 ```hcl
 module "cicd" {
   source = "github.com/Firecrown-Media/terraform-aws-cicd"
 
-  codepipeline_name       = "wordpress-pipeline"
-  codebuild_project_name  = "wordpress-build"
-  artifacts_bucket_name   = "wordpress-pipeline-artifacts"
+  # Basic configuration
+  codepipeline_name      = "wordpress-pipeline"
+  codebuild_project_name = "wordpress-build"
+  artifacts_bucket_name  = "wordpress-pipeline-artifacts"
 
-  # CodeBuild configuration
-  codebuild_environment_variables = [
-    {
-      name  = "AWS_DEFAULT_REGION"
-      value = "us-east-1"
-    },
-    {
-      name  = "ECR_REPOSITORY_URI"
-      value = "123456789012.dkr.ecr.us-east-1.amazonaws.com/my-app"
-    }
-  ]
-
-  # VPC configuration for CodeBuild
-  vpc_config = {
-    vpc_id             = "vpc-12345678"
-    subnets            = ["subnet-12345678", "subnet-87654321"]
-    security_group_ids = ["sg-12345678"]
-  }
+  # Use CodeDeploy for blue/green deployment
+  deployment_type = "codedeploy"
 
   # Source configuration
   source_config = {
-    type          = "GitHub"
-    github_owner  = "my-org"
-    github_repo   = "my-wordpress-app"
-    github_branch = "main"
-    github_oauth_token = var.github_oauth_token
+    type                  = "GitHubV2"
+    github_owner          = "my-org"
+    github_repo           = "my-wordpress-app"
+    github_branch         = "main"
+    github_connection_arn = "arn:aws:codestar-connections:us-east-1:123456789012:connection/xyz"
   }
 
   # Create CodeDeploy resources
-  create_codedeploy_app           = true
-  codedeploy_app_name            = "wordpress-app"
+  create_codedeploy_app            = true
+  codedeploy_app_name             = "wordpress-app"
   codedeploy_deployment_group_name = "wordpress-deployment-group"
-  codedeploy_compute_platform    = "ECS"
-  codedeploy_deployment_type     = "BLUE_GREEN"
+  codedeploy_compute_platform     = "ECS"
+  codedeploy_deployment_type      = "BLUE_GREEN"
 
   # ECS configuration for CodeDeploy
   codedeploy_ecs_config = {
@@ -103,7 +89,7 @@ module "cicd" {
     service_name = "wordpress-service"
   }
 
-  # Load balancer configuration
+  # Load balancer configuration for blue/green
   codedeploy_load_balancer_info = {
     target_group_pair_info = {
       prod_traffic_route = {
@@ -116,29 +102,20 @@ module "cicd" {
     }
   }
 
-  # Task role ARNs that CodeDeploy can pass to ECS
-  codedeploy_task_role_arns = [
-    "arn:aws:iam::123456789012:role/wordpress-task-role",
-    "arn:aws:iam::123456789012:role/wordpress-execution-role"
-  ]
-
-  # Deploy configuration
+  # Deploy configuration for CodeDeploy
   deploy_config = {
     provider = "CodeDeployToECS"
     configuration = {
       ApplicationName     = "wordpress-app"
       DeploymentGroupName = "wordpress-deployment-group"
-      TaskDefinitionTemplateArtifact = "build_output"
-      TaskDefinitionTemplatePath     = "taskdef.json"
-      AppSpecTemplateArtifact        = "build_output"
-      AppSpecTemplatePath           = "appspec.yaml"
     }
   }
 
-  # SNS notifications
-  enable_pipeline_notifications = true
-  create_sns_topic = true
-  sns_topic_name   = "wordpress-pipeline-notifications"
+  # Task role ARNs that CodeDeploy can pass to ECS
+  codedeploy_task_role_arns = [
+    "arn:aws:iam::123456789012:role/wordpress-task-role",
+    "arn:aws:iam::123456789012:role/wordpress-execution-role"
+  ]
 
   # Additional CodeBuild policies (for ECR access)
   codebuild_additional_policy_arns = [
@@ -195,6 +172,7 @@ module "cicd" {
 | codebuild_project_name | Name of the CodeBuild project | `string` | n/a | yes |
 | artifacts_bucket_name | Name of the S3 bucket for pipeline artifacts | `string` | n/a | yes |
 | source_config | Source configuration for the pipeline | `object` | n/a | yes |
+| deployment_type | Type of deployment: 'codedeploy' for blue/green or 'ecs' for rolling deployment | `string` | `"codedeploy"` | no |
 | deploy_config | Deploy configuration for the pipeline | `object` | `{"provider": "CodeDeployToECS", "configuration": {}}` | no |
 | codebuild_compute_type | Compute type for CodeBuild | `string` | `"BUILD_GENERAL1_MEDIUM"` | no |
 | codebuild_image | Docker image for CodeBuild | `string` | `"aws/codebuild/amazonlinux2-x86_64-standard:5.0"` | no |
@@ -250,22 +228,33 @@ source_config = {
 
 ## Deploy Configuration
 
-The `deploy_config` variable is flexible and supports different deployment providers:
+The `deploy_config` variable supports different deployment providers based on the `deployment_type`:
 
-### CodeDeploy to ECS
+### ECS Rolling Deployment
 ```hcl
+deployment_type = "ecs"
 deploy_config = {
-  provider = "CodeDeployToECS"
+  provider = "ECS"
   configuration = {
-    ApplicationName                = "my-app"
-    DeploymentGroupName           = "my-deployment-group"
-    TaskDefinitionTemplateArtifact = "build_output"
-    TaskDefinitionTemplatePath     = "taskdef.json"
-    AppSpecTemplateArtifact        = "build_output"
-    AppSpecTemplatePath           = "appspec.yaml"
+    ClusterName = "my-ecs-cluster"
+    ServiceName = "my-ecs-service"
   }
 }
 ```
+**Note**: For ECS rolling deployments, your build process should generate an `imagedefinitions.json` file.
+
+### CodeDeploy Blue/Green to ECS
+```hcl
+deployment_type = "codedeploy"
+deploy_config = {
+  provider = "CodeDeployToECS"
+  configuration = {
+    ApplicationName     = "my-app"
+    DeploymentGroupName = "my-deployment-group"
+  }
+}
+```
+**Note**: For CodeDeploy blue/green deployments, your build process should generate `taskdef.json` and `appspec.yaml` files.
 
 ### S3 Deployment
 ```hcl

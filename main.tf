@@ -177,24 +177,46 @@ resource "aws_codepipeline" "main" {
   stage {
     name = "Deploy"
 
-    action {
-      name            = "Deploy"
-      category        = "Deploy"
-      owner           = "AWS"
-      provider        = var.deploy_config.provider
-      input_artifacts = ["build_output"]
-      version         = "1"
+    # CodeDeploy action for blue/green deployments
+    dynamic "action" {
+      for_each = var.deployment_type == "codedeploy" ? [1] : []
+      content {
+        name            = "Deploy"
+        category        = "Deploy"
+        owner           = "AWS"
+        provider        = var.deploy_config.provider
+        input_artifacts = ["build_output"]
+        version         = "1"
 
-      # Full configuration for ECS Blue/Green deployments
-      configuration = {
-        ApplicationName                = lookup(var.deploy_config.configuration, "ApplicationName", "")
-        DeploymentGroupName           = lookup(var.deploy_config.configuration, "DeploymentGroupName", "")
-        TaskDefinitionTemplateArtifact = "build_output"
-        TaskDefinitionTemplatePath    = "taskdef.json"
-        AppSpecTemplateArtifact       = "build_output" 
-        AppSpecTemplatePath           = "appspec.yaml"
-        Image1ArtifactName            = "build_output"
-        Image1ContainerName           = var.codedeploy_container_name
+        configuration = {
+          ApplicationName                = lookup(var.deploy_config.configuration, "ApplicationName", "")
+          DeploymentGroupName           = lookup(var.deploy_config.configuration, "DeploymentGroupName", "")
+          TaskDefinitionTemplateArtifact = "build_output"
+          TaskDefinitionTemplatePath    = "taskdef.json"
+          AppSpecTemplateArtifact       = "build_output" 
+          AppSpecTemplatePath           = "appspec.yaml"
+          Image1ArtifactName            = "build_output"
+          Image1ContainerName           = var.codedeploy_container_name
+        }
+      }
+    }
+
+    # ECS action for rolling deployments
+    dynamic "action" {
+      for_each = var.deployment_type == "ecs" ? [1] : []
+      content {
+        name            = "Deploy"
+        category        = "Deploy"
+        owner           = "AWS"
+        provider        = "ECS"
+        input_artifacts = ["build_output"]
+        version         = "1"
+
+        configuration = {
+          ClusterName = lookup(var.deploy_config.configuration, "ClusterName", "")
+          ServiceName = lookup(var.deploy_config.configuration, "ServiceName", "")
+          FileName    = "imagedefinitions.json"
+        }
       }
     }
   }
@@ -228,9 +250,9 @@ resource "aws_codepipeline_webhook" "github" {
   })
 }
 
-# CodeDeploy Application (optional)
+# CodeDeploy Application (only for CodeDeploy deployments)
 resource "aws_codedeploy_app" "main" {
-  count            = var.create_codedeploy_app ? 1 : 0
+  count            = var.deployment_type == "codedeploy" && var.create_codedeploy_app ? 1 : 0
   compute_platform = var.codedeploy_compute_platform
   name             = var.codedeploy_app_name
 
@@ -240,9 +262,9 @@ resource "aws_codedeploy_app" "main" {
   })
 }
 
-# CodeDeploy Deployment Group (optional)
+# CodeDeploy Deployment Group (only for CodeDeploy deployments)
 resource "aws_codedeploy_deployment_group" "main" {
-  count                 = var.create_codedeploy_app ? 1 : 0
+  count                 = var.deployment_type == "codedeploy" && var.create_codedeploy_app ? 1 : 0
   app_name              = aws_codedeploy_app.main[0].name
   deployment_group_name = var.codedeploy_deployment_group_name
   service_role_arn      = aws_iam_role.codedeploy_role[0].arn
@@ -324,7 +346,7 @@ resource "aws_cloudwatch_log_group" "codebuild" {
 }
 
 resource "aws_cloudwatch_log_group" "codedeploy" {
-  count             = var.create_codedeploy_app ? 1 : 0
+  count             = var.deployment_type == "codedeploy" && var.create_codedeploy_app ? 1 : 0
   name              = "/aws/codedeploy/${var.codedeploy_app_name}"
   retention_in_days = var.log_retention_days
   kms_key_id        = var.logs_kms_key_id != "" ? var.logs_kms_key_id : null

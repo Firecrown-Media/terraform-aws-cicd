@@ -102,6 +102,17 @@ variable "github_webhook_secret" {
   sensitive   = true
 }
 
+# Deployment Type Configuration
+variable "deployment_type" {
+  description = "Type of deployment: 'codedeploy' for blue/green or 'ecs' for rolling deployment"
+  type        = string
+  default     = "codedeploy"
+  validation {
+    condition     = contains(["codedeploy", "ecs"], var.deployment_type)
+    error_message = "Deployment type must be either 'codedeploy' or 'ecs'."
+  }
+}
+
 # Deploy Configuration
 variable "deploy_config" {
   description = "Deploy configuration for the pipeline"

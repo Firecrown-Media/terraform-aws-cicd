@@ -51,7 +51,7 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
         ]
         Resource = aws_codebuild_project.main.arn
       }
-    ], var.create_codedeploy_app ? [
+    ], var.deployment_type == "codedeploy" && var.create_codedeploy_app ? [
       {
         Effect = "Allow"
         Action = [
@@ -61,6 +61,20 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
           "codedeploy:GetDeployment",
           "codedeploy:GetDeploymentConfig",
           "codedeploy:RegisterApplicationRevision"
+        ]
+        Resource = "*"
+      }
+    ] : [], var.deployment_type == "ecs" ? [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecs:DescribeServices",
+          "ecs:DescribeTaskDefinition",
+          "ecs:DescribeTasks",
+          "ecs:ListTasks",
+          "ecs:RegisterTaskDefinition",
+          "ecs:UpdateService",
+          "iam:PassRole"
         ]
         Resource = "*"
       }
@@ -204,9 +218,9 @@ resource "aws_iam_role_policy_attachment" "codebuild_additional_policies" {
 #   policy_arn = "arn:aws:iam::aws:policy/EC2InstanceProfileForImageBuilder"
 # }
 
-# CodeDeploy Service Role (optional)
+# CodeDeploy Service Role (only for CodeDeploy deployments)
 resource "aws_iam_role" "codedeploy_role" {
-  count       = var.create_codedeploy_app ? 1 : 0
+  count       = var.deployment_type == "codedeploy" && var.create_codedeploy_app ? 1 : 0
   name_prefix = "${substr(var.codedeploy_app_name, 0, 32)}-deploy-"
 
   assume_role_policy = jsonencode({
@@ -230,14 +244,14 @@ resource "aws_iam_role" "codedeploy_role" {
 
 # Attach AWS managed policy for CodeDeploy based on compute platform
 resource "aws_iam_role_policy_attachment" "codedeploy_policy" {
-  count      = var.create_codedeploy_app ? 1 : 0
+  count      = var.deployment_type == "codedeploy" && var.create_codedeploy_app ? 1 : 0
   policy_arn = local.codedeploy_managed_policy_arn
   role       = aws_iam_role.codedeploy_role[0].name
 }
 
 # Additional CodeDeploy policy for ECS Blue/Green deployments
 resource "aws_iam_role_policy" "codedeploy_ecs_policy" {
-  count       = var.create_codedeploy_app && var.codedeploy_compute_platform == "ECS" ? 1 : 0
+  count       = var.deployment_type == "codedeploy" && var.create_codedeploy_app && var.codedeploy_compute_platform == "ECS" ? 1 : 0
   name_prefix = "${substr(var.codedeploy_app_name, 0, 32)}-ecs-"
   role        = aws_iam_role.codedeploy_role[0].id
 
