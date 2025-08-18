@@ -78,6 +78,23 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
           "ecs:ListClusters",
           "ecs:DescribeContainerInstances",
           "ecs:ListContainerInstances",
+          "ecs:CreateService",
+          "ecs:DeleteService",
+          "ecs:DeregisterTaskDefinition",
+          "ecs:RunTask",
+          "ecs:StopTask",
+          "ecs:StartTask",
+          "ecs:SubmitTaskStateChange",
+          "ecs:SubmitContainerStateChange",
+          "ecs:DescribeTaskSets",
+          "ecs:UpdateServicePrimaryTaskSet",
+          "ecs:CreateTaskSet",
+          "ecs:DeleteTaskSet",
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams",
           "iam:PassRole"
         ]
         Resource = "*"
