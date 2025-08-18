@@ -295,6 +295,12 @@ variable "codebuild_additional_policy_arns" {
   default     = []
 }
 
+variable "codepipeline_additional_policy_arns" {
+  description = "List of additional IAM policy ARNs to attach to CodePipeline role"
+  type        = list(string)
+  default     = []
+}
+
 # CodeDeploy Task Role ARNs
 variable "codedeploy_task_role_arns" {
   description = "List of task role ARNs that CodeDeploy can pass to ECS tasks"

@@ -238,6 +238,13 @@ resource "aws_iam_role_policy_attachment" "codebuild_additional_policies" {
   policy_arn = each.value
 }
 
+# Additional CodePipeline policies can be attached via this policy attachment
+resource "aws_iam_role_policy_attachment" "codepipeline_additional_policies" {
+  for_each   = toset(var.codepipeline_additional_policy_arns)
+  role       = aws_iam_role.codepipeline_role.name
+  policy_arn = each.value
+}
+
 # Alternative: Remove VPC managed policy for troubleshooting
 # The issue might be policy conflicts or wrong managed policy
 # resource "aws_iam_role_policy_attachment" "codebuild_vpc_managed_policy" {
