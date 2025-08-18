@@ -74,6 +74,10 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
           "ecs:ListTasks",
           "ecs:RegisterTaskDefinition",
           "ecs:UpdateService",
+          "ecs:DescribeClusters",
+          "ecs:ListClusters",
+          "ecs:DescribeContainerInstances",
+          "ecs:ListContainerInstances",
           "iam:PassRole"
         ]
         Resource = "*"
