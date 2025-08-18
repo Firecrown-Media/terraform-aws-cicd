@@ -94,8 +94,7 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
           "logs:CreateLogStream",
           "logs:PutLogEvents",
           "logs:DescribeLogGroups",
-          "logs:DescribeLogStreams",
-          "iam:PassRole"
+          "logs:DescribeLogStreams"
         ]
         Resource = "*"
       }
