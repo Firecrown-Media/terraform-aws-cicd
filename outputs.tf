@@ -99,7 +99,3 @@ output "pipeline_state_change_rule_arn" {
   value       = var.enable_pipeline_notifications ? aws_cloudwatch_event_rule.pipeline_state_change[0].arn : null
 }
 
-output "stage_state_change_rule_arn" {
-  description = "ARN of the stage state change CloudWatch event rule"
-  value       = var.enable_pipeline_notifications ? aws_cloudwatch_event_rule.stage_state_change[0].arn : null
-}
