@@ -414,6 +414,7 @@ resource "aws_cloudwatch_event_target" "pipeline_sns" {
   rule      = aws_cloudwatch_event_rule.pipeline_state_change[0].name
   target_id = "SendToSNS"
   arn       = var.sns_topic_arn
+  role_arn  = var.eventbridge_role_arn != "" ? var.eventbridge_role_arn : null
 
   input_transformer {
     input_paths = {
@@ -439,6 +440,7 @@ resource "aws_cloudwatch_event_target" "stage_sns" {
   rule      = aws_cloudwatch_event_rule.stage_state_change[0].name
   target_id = "SendToSNS"
   arn       = var.sns_topic_arn
+  role_arn  = var.eventbridge_role_arn != "" ? var.eventbridge_role_arn : null
 
   input_transformer {
     input_paths = {

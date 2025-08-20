@@ -288,6 +288,12 @@ variable "enable_pipeline_notifications" {
   default     = false
 }
 
+variable "eventbridge_role_arn" {
+  description = "IAM role ARN for EventBridge to use when publishing to SNS topics"
+  type        = string
+  default     = ""
+}
+
 # CodeBuild Additional Policies
 variable "codebuild_additional_policy_arns" {
   description = "List of additional IAM policy ARNs to attach to CodeBuild role"
