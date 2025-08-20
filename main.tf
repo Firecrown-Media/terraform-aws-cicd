@@ -388,25 +388,6 @@ resource "aws_cloudwatch_event_rule" "pipeline_state_change" {
   })
 }
 
-# CloudWatch Event Rule for stage state changes
-resource "aws_cloudwatch_event_rule" "stage_state_change" {
-  count       = var.enable_pipeline_notifications ? 1 : 0
-  name        = "${var.codepipeline_name}-stage-state-change"
-  description = "Capture pipeline stage state changes"
-
-  event_pattern = jsonencode({
-    source      = ["aws.codepipeline"]
-    detail-type = ["CodePipeline Stage Execution State Change"]
-    detail = {
-      pipeline = [aws_codepipeline.main.name]
-    }
-  })
-
-  tags = merge(var.tags, {
-    name      = "${var.codepipeline_name}-stage-state-change"
-    component = "cicd"
-  })
-}
 
 # SNS Topic targets for notifications
 resource "aws_cloudwatch_event_target" "pipeline_sns" {
@@ -435,30 +416,3 @@ EOF
   }
 }
 
-resource "aws_cloudwatch_event_target" "stage_sns" {
-  count     = var.enable_pipeline_notifications && var.sns_topic_arn != "" ? 1 : 0
-  rule      = aws_cloudwatch_event_rule.stage_state_change[0].name
-  target_id = "SendToSNS"
-  arn       = var.sns_topic_arn
-  role_arn  = var.eventbridge_role_arn != "" ? var.eventbridge_role_arn : null
-
-  input_transformer {
-    input_paths = {
-      pipeline = "$.detail.pipeline"
-      stage    = "$.detail.stage"
-      state    = "$.detail.state"
-      region   = "$.region"
-      time     = "$.time"
-    }
-    input_template = <<EOF
-{
-  "pipeline": "<pipeline>",
-  "stage": "<stage>",
-  "state": "<state>",
-  "region": "<region>",
-  "time": "<time>",
-  "message": "Pipeline <pipeline> stage <stage> is now in <state> state"
-}
-EOF
-  }
-}
