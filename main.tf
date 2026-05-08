@@ -3,9 +3,9 @@
 
 # CodeBuild Project
 resource "aws_codebuild_project" "main" {
-  name          = var.codebuild_project_name
-  description   = var.codebuild_description
-  service_role  = aws_iam_role.codebuild_role.arn
+  name         = var.codebuild_project_name
+  description  = var.codebuild_description
+  service_role = aws_iam_role.codebuild_role.arn
 
   artifacts {
     type = "CODEPIPELINE"
@@ -13,10 +13,10 @@ resource "aws_codebuild_project" "main" {
 
   environment {
     compute_type                = var.codebuild_compute_type
-    image                      = var.codebuild_image
-    type                       = "LINUX_CONTAINER"
+    image                       = var.codebuild_image
+    type                        = "LINUX_CONTAINER"
     image_pull_credentials_type = "CODEBUILD"
-    privileged_mode            = var.codebuild_privileged_mode
+    privileged_mode             = var.codebuild_privileged_mode
 
     dynamic "environment_variable" {
       for_each = var.codebuild_environment_variables
@@ -36,8 +36,8 @@ resource "aws_codebuild_project" "main" {
   dynamic "vpc_config" {
     for_each = var.vpc_config != null ? [var.vpc_config] : []
     content {
-      vpc_id = vpc_config.value.vpc_id
-      subnets = vpc_config.value.subnets
+      vpc_id             = vpc_config.value.vpc_id
+      subnets            = vpc_config.value.subnets
       security_group_ids = vpc_config.value.security_group_ids
     }
   }
@@ -190,13 +190,13 @@ resource "aws_codepipeline" "main" {
 
         configuration = {
           ApplicationName                = lookup(var.deploy_config.configuration, "ApplicationName", "")
-          DeploymentGroupName           = lookup(var.deploy_config.configuration, "DeploymentGroupName", "")
+          DeploymentGroupName            = lookup(var.deploy_config.configuration, "DeploymentGroupName", "")
           TaskDefinitionTemplateArtifact = "build_output"
-          TaskDefinitionTemplatePath    = "taskdef.json"
-          AppSpecTemplateArtifact       = "build_output" 
-          AppSpecTemplatePath           = "appspec.yaml"
-          Image1ArtifactName            = "build_output"
-          Image1ContainerName           = var.codedeploy_container_name
+          TaskDefinitionTemplatePath     = "taskdef.json"
+          AppSpecTemplateArtifact        = "build_output"
+          AppSpecTemplatePath            = "appspec.yaml"
+          Image1ArtifactName             = "build_output"
+          Image1ContainerName            = var.codedeploy_container_name
         }
       }
     }
@@ -229,7 +229,7 @@ resource "aws_codepipeline" "main" {
 
 # Optional GitHub webhook (only for GitHub v1)
 resource "aws_codepipeline_webhook" "github" {
-  count           = var.source_config.type == "GitHub" && var.github_webhook_secret != "" ? 1 : 0
+  count           = var.source_config.type == "GitHub" && var.github_webhook_secret != null ? 1 : 0
   name            = "${var.codepipeline_name}-webhook"
   authentication  = "GITHUB_HMAC"
   target_action   = "Source"
@@ -280,7 +280,7 @@ resource "aws_codedeploy_deployment_group" "main" {
     for_each = var.codedeploy_deployment_type == "BLUE_GREEN" ? [1] : []
     content {
       terminate_blue_instances_on_deployment_success {
-        action                         = "TERMINATE"
+        action                           = "TERMINATE"
         termination_wait_time_in_minutes = var.codedeploy_termination_wait_time
       }
 
@@ -310,7 +310,7 @@ resource "aws_codedeploy_deployment_group" "main" {
               listener_arns = prod_traffic_route.value.listener_arns
             }
           }
-          
+
           dynamic "target_group" {
             for_each = target_group_pair_info.value.target_groups
             content {
@@ -337,7 +337,7 @@ resource "aws_codedeploy_deployment_group" "main" {
 resource "aws_cloudwatch_log_group" "codebuild" {
   name              = "/aws/codebuild/${var.codebuild_project_name}"
   retention_in_days = var.log_retention_days
-  kms_key_id        = var.logs_kms_key_id != "" ? var.logs_kms_key_id : null
+  kms_key_id        = var.logs_kms_key_id
 
   tags = merge(var.tags, {
     name      = "${var.codebuild_project_name}-logs"
@@ -349,7 +349,7 @@ resource "aws_cloudwatch_log_group" "codedeploy" {
   count             = var.deployment_type == "codedeploy" && var.create_codedeploy_app ? 1 : 0
   name              = "/aws/codedeploy/${var.codedeploy_app_name}"
   retention_in_days = var.log_retention_days
-  kms_key_id        = var.logs_kms_key_id != "" ? var.logs_kms_key_id : null
+  kms_key_id        = var.logs_kms_key_id
 
   tags = merge(var.tags, {
     name      = "${var.codedeploy_app_name}-logs"
@@ -391,11 +391,11 @@ resource "aws_cloudwatch_event_rule" "pipeline_state_change" {
 
 # SNS Topic targets for notifications
 resource "aws_cloudwatch_event_target" "pipeline_sns" {
-  count     = var.enable_pipeline_notifications && var.sns_topic_arn != "" ? 1 : 0
+  count     = var.enable_pipeline_notifications && var.sns_topic_arn != null ? 1 : 0
   rule      = aws_cloudwatch_event_rule.pipeline_state_change[0].name
   target_id = "SendToSNS"
   arn       = var.sns_topic_arn
-  role_arn  = var.eventbridge_role_arn != "" ? var.eventbridge_role_arn : null
+  role_arn  = var.eventbridge_role_arn
 
   input_transformer {
     input_paths = {

@@ -28,7 +28,7 @@ variable "codebuild_compute_type" {
   validation {
     condition = contains([
       "BUILD_GENERAL1_SMALL",
-      "BUILD_GENERAL1_MEDIUM", 
+      "BUILD_GENERAL1_MEDIUM",
       "BUILD_GENERAL1_LARGE",
       "BUILD_GENERAL1_2XLARGE"
     ], var.codebuild_compute_type)
@@ -79,26 +79,27 @@ variable "vpc_config" {
 variable "source_config" {
   description = "Source configuration for the pipeline"
   type = object({
-    type                     = string # "S3", "GitHub", or "GitHubV2"
-    s3_bucket               = optional(string)
-    s3_key                  = optional(string)
-    github_owner            = optional(string)
-    github_repo             = optional(string)
-    github_branch           = optional(string, "main")
-    github_oauth_token      = optional(string) # For GitHub v1 (deprecated)
-    github_connection_arn   = optional(string) # For GitHub v2 (recommended)
+    type                  = string # "S3", "GitHub", or "GitHubV2"
+    s3_bucket             = optional(string)
+    s3_key                = optional(string)
+    github_owner          = optional(string)
+    github_repo           = optional(string)
+    github_branch         = optional(string, "main")
+    github_oauth_token    = optional(string) # For GitHub v1 (deprecated)
+    github_connection_arn = optional(string) # For GitHub v2 (recommended)
   })
-  
+
   validation {
-    condition = contains(["S3", "GitHub", "GitHubV2"], var.source_config.type)
+    condition     = contains(["S3", "GitHub", "GitHubV2"], var.source_config.type)
     error_message = "Source type must be either 'S3', 'GitHub', or 'GitHubV2'."
   }
 }
 
 variable "github_webhook_secret" {
-  description = "Secret for GitHub webhook"
+  description = "Secret for GitHub webhook (GitHub v1 only)"
   type        = string
-  default     = ""
+  nullable    = true
+  default     = null
   sensitive   = true
 }
 
@@ -121,7 +122,7 @@ variable "deploy_config" {
     configuration = map(string)
   })
   default = {
-    provider = "CodeDeployToECS"
+    provider      = "CodeDeployToECS"
     configuration = {}
   }
 }
@@ -136,13 +137,15 @@ variable "create_codedeploy_app" {
 variable "codedeploy_app_name" {
   description = "Name of the CodeDeploy application"
   type        = string
-  default     = ""
+  nullable    = true
+  default     = null
 }
 
 variable "codedeploy_deployment_group_name" {
   description = "Name of the CodeDeploy deployment group"
   type        = string
-  default     = ""
+  nullable    = true
+  default     = null
 }
 
 variable "codedeploy_compute_platform" {
@@ -247,7 +250,8 @@ variable "artifacts_bucket_encryption_algorithm" {
 variable "artifacts_bucket_kms_key_id" {
   description = "KMS key ID for artifacts bucket encryption"
   type        = string
-  default     = ""
+  nullable    = true
+  default     = null
 }
 
 # Logging
@@ -260,7 +264,8 @@ variable "log_retention_days" {
 variable "logs_kms_key_id" {
   description = "KMS key ID for CloudWatch logs encryption"
   type        = string
-  default     = ""
+  nullable    = true
+  default     = null
 }
 
 # SNS Notifications
@@ -273,13 +278,15 @@ variable "create_sns_topic" {
 variable "sns_topic_name" {
   description = "Name of the SNS topic for notifications"
   type        = string
-  default     = ""
+  nullable    = true
+  default     = null
 }
 
 variable "sns_topic_arn" {
   description = "ARN of existing SNS topic for notifications"
   type        = string
-  default     = ""
+  nullable    = true
+  default     = null
 }
 
 variable "enable_pipeline_notifications" {
@@ -291,7 +298,8 @@ variable "enable_pipeline_notifications" {
 variable "eventbridge_role_arn" {
   description = "IAM role ARN for EventBridge to use when publishing to SNS topics"
   type        = string
-  default     = ""
+  nullable    = true
+  default     = null
 }
 
 # CodeBuild Additional Policies

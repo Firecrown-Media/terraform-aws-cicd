@@ -51,7 +51,7 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
         ]
         Resource = aws_codebuild_project.main.arn
       }
-    ], var.deployment_type == "codedeploy" && var.create_codedeploy_app ? [
+      ], var.deployment_type == "codedeploy" && var.create_codedeploy_app ? [
       {
         Effect = "Allow"
         Action = [
@@ -64,7 +64,7 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
         ]
         Resource = "*"
       }
-    ] : [], var.deployment_type == "ecs" ? [
+      ] : [], var.deployment_type == "ecs" ? [
       {
         Effect = "Allow"
         Action = [
@@ -98,7 +98,7 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
         ]
         Resource = "*"
       }
-    ] : [], var.source_config.type == "GitHubV2" && var.source_config.github_connection_arn != null ? [
+      ] : [], var.source_config.type == "GitHubV2" && var.source_config.github_connection_arn != null ? [
       {
         Effect = "Allow"
         Action = [
@@ -106,7 +106,7 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
         ]
         Resource = var.source_config.github_connection_arn
       }
-    ] : [], length(var.codedeploy_task_role_arns) > 0 ? [
+      ] : [], length(var.codedeploy_task_role_arns) > 0 ? [
       {
         Effect = "Allow"
         Action = [
@@ -312,7 +312,7 @@ resource "aws_iam_role_policy" "codedeploy_ecs_policy" {
         ]
         Resource = "*"
       }
-    ], length(var.codedeploy_task_role_arns) > 0 ? [
+      ], length(var.codedeploy_task_role_arns) > 0 ? [
       {
         Effect = "Allow"
         Action = [
@@ -337,7 +337,7 @@ resource "aws_sns_topic_policy" "pipeline_notifications" {
         Principal = {
           Service = "events.amazonaws.com"
         }
-        Action = "sns:Publish"
+        Action   = "sns:Publish"
         Resource = aws_sns_topic.pipeline_notifications[0].arn
       }
     ]
