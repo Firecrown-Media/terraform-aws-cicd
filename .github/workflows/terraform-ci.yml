@@ -38,6 +38,14 @@ jobs:
       - name: TFLint
         run: tflint
 
+      - name: Trivy Config Scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: config
+          exit-code: "1"
+          severity: HIGH,CRITICAL
+          trivy-config: trivy.yaml
+
       - name: Setup terraform-docs
         uses: terraform-docs/gh-actions@v1
         with:
