@@ -1,1 +1,2 @@
+# No scan configuration overrides needed — this module has zero HIGH/CRITICAL findings.
 scan: {}
