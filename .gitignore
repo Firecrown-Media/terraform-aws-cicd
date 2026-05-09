@@ -2,6 +2,9 @@
 .terraform/
 .terraform.lock.hcl
 .tflint.d/
+
+# trivy cache (created by trivy-action in CI workspace)
+.cache/trivy/
 *.tfplan
 *.tfstate
 *.tfstate.backup
