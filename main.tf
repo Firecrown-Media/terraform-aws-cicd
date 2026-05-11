@@ -406,6 +406,7 @@ resource "aws_cloudwatch_event_target" "pipeline_sns" {
     }
     input_template = <<EOF
 {
+  "source": "aws.codepipeline",
   "pipeline": "<pipeline>",
   "state": "<state>",
   "region": "<region>",
