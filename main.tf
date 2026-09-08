@@ -1,6 +1,39 @@
 # AWS CI/CD Module for ECS Blue/Green Deployments
 # Reusable Terraform module for CodePipeline, CodeBuild, and CodeDeploy
 
+locals {
+  # This module labels what it creates with a lowercase `name` tag. Most AWS
+  # services treat tag keys case-sensitively, so a caller passing `Name` (the
+  # AWS-wide convention, and what cloudposse's null-label emits) simply ends up
+  # with both. IAM is the exception: it compares tag keys case-insensitively and
+  # rejects the request outright --
+  #
+  #   InvalidInput: Duplicate tag keys found. Please note that Tag keys are
+  #   case insensitive.
+  #
+  # -- so CreateRole fails and the whole apply stops. Rather than rename the tag
+  # (which would rewrite tags for every existing consumer), the module now yields
+  # to the caller: if var.tags already carries a key that case-matches one this
+  # module would add, the caller's wins and ours is not set.
+  #
+  # Callers that pass neither key are unaffected, which is the common case.
+  caller_tag_keys = [for k in keys(var.tags) : lower(k)]
+
+  # Set a per-resource `name` only when the caller has not already claimed that
+  # key in some casing. Each resource below writes:
+  #   merge(local.common_tags, local.add_name_tag ? { name = "..." } : {})
+  add_name_tag = !contains(local.caller_tag_keys, "name")
+
+  common_tags = merge(
+    var.tags,
+    contains(local.caller_tag_keys, "component") ? {} : { component = "cicd" },
+  )
+
+  # codedeploy_container_name is the historical (misleading) spelling of this;
+  # codedeploy_image_placeholder wins when set.
+  image_placeholder = var.codedeploy_image_placeholder != null ? var.codedeploy_image_placeholder : var.codedeploy_container_name
+}
+
 # CodeBuild Project
 resource "aws_codebuild_project" "main" {
   name         = var.codebuild_project_name
@@ -42,20 +75,14 @@ resource "aws_codebuild_project" "main" {
     }
   }
 
-  tags = merge(var.tags, {
-    name      = var.codebuild_project_name
-    component = "cicd"
-  })
+  tags = merge(local.common_tags, local.add_name_tag ? { name = var.codebuild_project_name } : {})
 }
 
 # S3 Bucket for CodePipeline artifacts
 resource "aws_s3_bucket" "codepipeline_artifacts" {
   bucket = var.artifacts_bucket_name
 
-  tags = merge(var.tags, {
-    name      = var.artifacts_bucket_name
-    component = "cicd"
-  })
+  tags = merge(local.common_tags, local.add_name_tag ? { name = var.artifacts_bucket_name } : {})
 }
 
 resource "aws_s3_bucket_versioning" "codepipeline_artifacts" {
@@ -196,7 +223,7 @@ resource "aws_codepipeline" "main" {
           AppSpecTemplateArtifact        = "build_output"
           AppSpecTemplatePath            = "appspec.yaml"
           Image1ArtifactName             = "build_output"
-          Image1ContainerName            = var.codedeploy_container_name
+          Image1ContainerName            = local.image_placeholder
         }
       }
     }
@@ -221,10 +248,7 @@ resource "aws_codepipeline" "main" {
     }
   }
 
-  tags = merge(var.tags, {
-    name      = var.codepipeline_name
-    component = "cicd"
-  })
+  tags = merge(local.common_tags, local.add_name_tag ? { name = var.codepipeline_name } : {})
 }
 
 # Optional GitHub webhook (only for GitHub v1)
@@ -244,10 +268,7 @@ resource "aws_codepipeline_webhook" "github" {
     match_equals = "refs/heads/${var.source_config.github_branch}"
   }
 
-  tags = merge(var.tags, {
-    name      = "${var.codepipeline_name}-webhook"
-    component = "cicd"
-  })
+  tags = merge(local.common_tags, local.add_name_tag ? { name = "${var.codepipeline_name}-webhook" } : {})
 }
 
 # CodeDeploy Application (only for CodeDeploy deployments)
@@ -256,10 +277,7 @@ resource "aws_codedeploy_app" "main" {
   compute_platform = var.codedeploy_compute_platform
   name             = var.codedeploy_app_name
 
-  tags = merge(var.tags, {
-    name      = var.codedeploy_app_name
-    component = "cicd"
-  })
+  tags = merge(local.common_tags, local.add_name_tag ? { name = var.codedeploy_app_name } : {})
 }
 
 # CodeDeploy Deployment Group (only for CodeDeploy deployments)
@@ -327,10 +345,7 @@ resource "aws_codedeploy_deployment_group" "main" {
     events  = var.codedeploy_auto_rollback_events
   }
 
-  tags = merge(var.tags, {
-    name      = var.codedeploy_deployment_group_name
-    component = "cicd"
-  })
+  tags = merge(local.common_tags, local.add_name_tag ? { name = var.codedeploy_deployment_group_name } : {})
 }
 
 # CloudWatch Log Groups
@@ -339,10 +354,7 @@ resource "aws_cloudwatch_log_group" "codebuild" {
   retention_in_days = var.log_retention_days
   kms_key_id        = var.logs_kms_key_id
 
-  tags = merge(var.tags, {
-    name      = "${var.codebuild_project_name}-logs"
-    component = "cicd"
-  })
+  tags = merge(local.common_tags, local.add_name_tag ? { name = "${var.codebuild_project_name}-logs" } : {})
 }
 
 resource "aws_cloudwatch_log_group" "codedeploy" {
@@ -351,10 +363,7 @@ resource "aws_cloudwatch_log_group" "codedeploy" {
   retention_in_days = var.log_retention_days
   kms_key_id        = var.logs_kms_key_id
 
-  tags = merge(var.tags, {
-    name      = "${var.codedeploy_app_name}-logs"
-    component = "cicd"
-  })
+  tags = merge(local.common_tags, local.add_name_tag ? { name = "${var.codedeploy_app_name}-logs" } : {})
 }
 
 # Optional SNS Topic for pipeline notifications
@@ -362,10 +371,7 @@ resource "aws_sns_topic" "pipeline_notifications" {
   count = var.create_sns_topic ? 1 : 0
   name  = var.sns_topic_name
 
-  tags = merge(var.tags, {
-    name      = var.sns_topic_name
-    component = "cicd"
-  })
+  tags = merge(local.common_tags, local.add_name_tag ? { name = var.sns_topic_name } : {})
 }
 
 # CloudWatch Event Rule for pipeline state changes
@@ -382,10 +388,7 @@ resource "aws_cloudwatch_event_rule" "pipeline_state_change" {
     }
   })
 
-  tags = merge(var.tags, {
-    name      = "${var.codepipeline_name}-state-change"
-    component = "cicd"
-  })
+  tags = merge(local.common_tags, local.add_name_tag ? { name = "${var.codepipeline_name}-state-change" } : {})
 }
 
 

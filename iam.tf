@@ -17,10 +17,7 @@ resource "aws_iam_role" "codepipeline_role" {
     ]
   })
 
-  tags = merge(var.tags, {
-    name      = "${var.codepipeline_name}-pipeline-role"
-    component = "cicd"
-  })
+  tags = merge(local.common_tags, local.add_name_tag ? { name = "${var.codepipeline_name}-pipeline-role" } : {})
 }
 
 resource "aws_iam_role_policy" "codepipeline_policy" {
@@ -51,7 +48,21 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
         ]
         Resource = aws_codebuild_project.main.arn
       }
-      ], var.deployment_type == "codedeploy" && var.create_codedeploy_app ? [
+      # Gated on the deployment type alone, deliberately. This used to also
+      # require create_codedeploy_app, which meant the module's own
+      # "point at a CodeDeploy application you already have" path
+      # (create_codedeploy_app = false) produced a pipeline with no permission
+      # to talk to that application:
+      #
+      #   User: ...assumed-role/<pipeline-role> is not authorized to perform:
+      #   codedeploy:GetApplication on resource: ...application:<app>
+      #
+      # The pipeline needs these whether or not this module created the
+      # application it deploys through. ecs:RegisterTaskDefinition is here for
+      # the same reason: the CodeDeployToECS action registers the revision from
+      # taskdef.json itself, so it needs the permission on every codedeploy
+      # pipeline, not just ones that own their application.
+      ], var.deployment_type == "codedeploy" ? [
       {
         Effect = "Allow"
         Action = [
@@ -61,6 +72,16 @@ resource "aws_iam_role_policy" "codepipeline_policy" {
           "codedeploy:GetDeployment",
           "codedeploy:GetDeploymentConfig",
           "codedeploy:RegisterApplicationRevision"
+        ]
+        Resource = "*"
+      },
+      {
+        # Neither action supports resource-level permissions.
+        Effect = "Allow"
+        Action = [
+          "ecs:RegisterTaskDefinition",
+          "ecs:DescribeTaskDefinition",
+          "ecs:DescribeServices"
         ]
         Resource = "*"
       }
@@ -135,10 +156,7 @@ resource "aws_iam_role" "codebuild_role" {
     ]
   })
 
-  tags = merge(var.tags, {
-    name      = "${var.codebuild_project_name}-build-role"
-    component = "cicd"
-  })
+  tags = merge(local.common_tags, local.add_name_tag ? { name = "${var.codebuild_project_name}-build-role" } : {})
 }
 
 resource "aws_iam_role_policy" "codebuild_policy" {
@@ -271,10 +289,7 @@ resource "aws_iam_role" "codedeploy_role" {
     ]
   })
 
-  tags = merge(var.tags, {
-    name      = "${var.codedeploy_app_name}-deploy-role"
-    component = "cicd"
-  })
+  tags = merge(local.common_tags, local.add_name_tag ? { name = "${var.codedeploy_app_name}-deploy-role" } : {})
 }
 
 # Attach AWS managed policy for CodeDeploy based on compute platform
