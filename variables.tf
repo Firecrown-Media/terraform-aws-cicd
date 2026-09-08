@@ -195,9 +195,20 @@ variable "codedeploy_termination_wait_time" {
 }
 
 variable "codedeploy_container_name" {
-  description = "Name of the container to update during CodeDeploy ECS deployment"
+  description = "DEPRECATED, use codedeploy_image_placeholder. Despite the name, this is not the ECS container name: it sets the pipeline action's Image1ContainerName, which CodePipeline matches against the <...> placeholder token in taskdef.json, not against any container. Kept for backwards compatibility."
   type        = string
   default     = "app"
+}
+
+variable "codedeploy_image_placeholder" {
+  description = "Name of the placeholder token in taskdef.json that CodePipeline substitutes the built image URI into. AWS's convention is IMAGE1_NAME, paired with `\"image\": \"<IMAGE1_NAME>\"` in the task definition. Overrides codedeploy_container_name when set."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.codedeploy_image_placeholder == null || can(regex("^[A-Za-z_][A-Za-z0-9_]*$", var.codedeploy_image_placeholder))
+    error_message = "codedeploy_image_placeholder is a bare token name -- no angle brackets. Write IMAGE1_NAME, not <IMAGE1_NAME>."
+  }
 }
 
 variable "codedeploy_auto_rollback_enabled" {
